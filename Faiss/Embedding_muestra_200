@@ -1,0 +1,73 @@
+import numpy as np
+import faiss
+import requests
+from io import StringIO
+import pandas as pd
+from sentence_transformers import SentenceTransformer
+from scipy import spatial
+
+i = 0
+texto = "" 
+#Importar e inizializar la informacion  
+info = 'D:\\Usuarios\\UGACJSS3\\Desktop\\emmbeding\\Muestra200_data.csv'
+data = pd.read_csv(info, sep=',',encoding='latin-1')
+print(data.head())
+
+print('\n \n ------------------------------------------------------------------------------- \n \n')
+
+#Tomar las columna de informacion
+sentences = data['Informacion'].tolist()
+#print(sentences)
+
+#Encodear las sentencias
+model = SentenceTransformer('scjnugacj/jurisbert')
+sentence_embeddings = model.encode(sentences)
+
+#El embeddingshappe nos da las dimenciones de nuestra matriz
+#print(sentence_embeddings.shape)
+
+#Imprimir las sentencias y su encodding opcional por el momento para ver como funciona JIJIJIJA
+#for sentences, embedding in zip(sentences, sentence_embeddings):
+    #print("Sentence:", sentences)
+    #print("Embedding:", embedding)
+
+#Vamos a imprimir las dos dimensiones para ver como esta construida
+#print(sentence_embeddings.shape[0])
+#print(sentence_embeddings.shape[1])
+
+#Asignamos un valor para posterioremente pasar a nuestro index
+d = sentence_embeddings.shape[1]
+
+#Lo asignamos al index
+index = faiss.IndexFlatL2(d)
+#Comprobamos
+#print(index.is_trained)
+
+#Añadimos al index nuestras sentencias embeddings
+index.add(sentence_embeddings)
+#imprimimos el total de nuestro index
+print(index.ntotal)
+
+#Los siguientes datos seran los vecinos cercanos que seran igual a 4 y  la palabra a buscar que tenga mas cecania
+k = 3
+texto = 'tribunal en materia administrativa'
+xq = model.encode([texto])
+
+#pOR BUSQUEDA
+# DE VECINOS
+# CERCCANOS
+#Parametro xq-> palabra que queremos comparar y k numero de "palabras similares"
+def vecinos_cercanos(): 
+    D, I = index.search(xq, k)  # busqueda
+    print('\n\n -.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-. \n\n')
+    print([f'{i}: {sentences[i]}' for i in I[0]])
+    
+def distancias_primer_metodo():
+    for i in range(0,index.ntotal):
+        result = 1 - spatial.distance.cosine(xq,sentence_embeddings[i])  
+        if result > 0.7:
+            print('\n')
+
+vecinos_cercanos()
+
+distancias_primer_metodo()
